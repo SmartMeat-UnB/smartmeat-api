@@ -11,9 +11,14 @@ def index():
 
 # TODO
 @app.route('/predict', methods=['POST'])
-def predict_receipt():
+def predict_recipe():
+    data = {"success": False}
     data = request.get_json(force=True)
-    return 'Predict'
+
+    if request.method == "POST":
+        pass
+
+    return 'Predict recipe'
 
 
 if __name__ == '__main__':
