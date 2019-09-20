@@ -7,15 +7,19 @@ import torch.nn as nn
 
 from PIL import Image
 from io import BytesIO
+from args import get_parser
 from torchvision import transforms
+from model import get_model
 from utils.output_utils import prepare_output
 from flask import Flask, request, jsonify, json
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+logger.warning("Working on %s" % os.getcwd())
+
 # Input params
-DATA_DIR = ''
+DATA_DIR = '../data'
 ingrs_vocab = pickle.load(open(os.path.join(DATA_DIR, 'ingr_vocab.pkl'), 'rb'))
 vocab = pickle.load(open(os.path.join(DATA_DIR, 'instr_vocab.pkl'), 'rb'))
 
@@ -24,8 +28,9 @@ instrs_vocab_size = len(vocab)
 output_dim = instrs_vocab_size
 
 # Model params
-MODEL_PATH = ''
-device = None
+MODEL_PATH = os.path.join(DATA_DIR, 'modelbest.ckpt')
+device = torch.device('cuda' if torch.cuda.is_available() and use_gpu else 'cpu')
+map_loc = None if torch.cuda.is_available() and use_gpu else 'cpu'
 greedy = [True, False, False, False]
 beam = [-1, -1, -1, -1]
 temperature = 1.0
@@ -44,12 +49,21 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def load_model(model_path):
+def load_model():
     global model
+    args = get_parser()
+    args.maxseqlen = 15
+    args.ingrs_only=False
+    model = get_model(args, ingr_vocab_size, instrs_vocab_size)
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=map_loc))
+    model.to(device)
+    model.eval()
+    model.ingrs_only = False
+    model.recipe_only = False
+    logger.debug('Loaded model')
 
 
 def preprocess_image(image):
-
     transf_list_batch = []
     transf_list_batch.append(transforms.ToTensor())
     transf_list_batch.append(transforms.Normalize((0.485, 0.456, 0.406),
@@ -72,9 +86,9 @@ def predict_recipe():
     data = {"success": False}
 
     if request.method == "POST":
-        logging.info('POST')
+        logger.info('POST')
         if request.files.get("image"):
-            logging.info('Image received')
+            logger.info('Image received')
             image = request.files["image"].read()
             image = Image.open(BytesIO(image))
 
@@ -93,12 +107,12 @@ def predict_recipe():
                                          ingrs_vocab, vocab)
 
             if valid['is_valid']:
-                logging.debug('Recipe succesfully generated!')
+                logger.debug('Recipe succesfully generated!')
                 num_valid += 1
                 # outs['title'], outs['ingrs'], outs['recipe']
                 return outs
             else:
-                logging.error('Recipe error!')
+                logger.error('Recipe error!')
         else:
             raise TypeError("File must be a image.")
 
@@ -106,4 +120,5 @@ def predict_recipe():
 
 
 if __name__ == '__main__':
+    load_model()
     app.run(host="0.0.0.0", port=5000, debug=True)
