@@ -1,9 +1,18 @@
 version: "3"
 services:
-  ml:
+  backend:
     build:
       context: .
+      dockerfile: backend.Dockerfile
     ports:
       - "5000:5000"
     volumes:
       - "./:/app"
+  inversecooking:
+    build:
+      context: .
+      dockerfile: inversecooking.Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./inverse-cooking/:/inversecooking"

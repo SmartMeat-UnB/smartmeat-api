@@ -1,9 +1,7 @@
 import os
-import numpy as np
 import pickle
 import logging
 import torch
-import torch.nn as nn
 
 from PIL import Image
 from io import BytesIO
@@ -29,8 +27,8 @@ output_dim = instrs_vocab_size
 
 # Model params
 MODEL_PATH = os.path.join(DATA_DIR, 'modelbest.ckpt')
-device = torch.device('cuda' if torch.cuda.is_available() and use_gpu else 'cpu')
-map_loc = None if torch.cuda.is_available() and use_gpu else 'cpu'
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+map_loc = None if torch.cuda.is_available() else 'cpu'
 greedy = [True, False, False, False]
 beam = [-1, -1, -1, -1]
 temperature = 1.0
@@ -53,7 +51,7 @@ def load_model():
     global model
     args = get_parser()
     args.maxseqlen = 15
-    args.ingrs_only=False
+    args.ingrs_only = False
     model = get_model(args, ingr_vocab_size, instrs_vocab_size)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=map_loc))
     model.to(device)
@@ -121,4 +119,4 @@ def predict_recipe():
 
 if __name__ == '__main__':
     load_model()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=3000, debug=True)
