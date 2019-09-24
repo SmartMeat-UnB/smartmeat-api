@@ -15,9 +15,11 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 logger.warning("Working on %s" % os.getcwd())
+logger.warning("The cwd contains: %s" % os.listdir(os.getcwd()))
 
 # Input params
-DATA_DIR = '../data'
+DATA_DIR = 'data/'
+WORKING_DIR = 'src/'
 ingrs_vocab = pickle.load(open(os.path.join(DATA_DIR, 'ingr_vocab.pkl'), 'rb'))
 vocab = pickle.load(open(os.path.join(DATA_DIR, 'instr_vocab.pkl'), 'rb'))
 
