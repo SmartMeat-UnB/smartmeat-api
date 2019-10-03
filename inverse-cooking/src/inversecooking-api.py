@@ -86,12 +86,17 @@ def predict_recipe():
     data = {"success": False}
 
     if request.method == "POST":
-        # if request.files.get("image"):
-        logger.warn('Image received')
-        image = request.files["image"].read()
-        image = Image.open(BytesIO(image))
+        logger.info('POST')
+        if request.files.get("image"):
+            logger.info('Image received')
+            try:
+                image = request.files["image"].read()
+            except:
+                logger.error('Couldn\'t open image')
+                return 500
 
-        image_tensor = preprocess_image(image)
+            image = Image.open(BytesIO(image))
+            image_tensor = preprocess_image(image)
 
         num_valid = 1
         for i in range(numgens):
