@@ -86,13 +86,12 @@ def predict_recipe():
     data = {"success": False}
 
     if request.method == "POST":
-        logger.info('POST')
-        if request.files.get("image"):
-            logger.info('Image received')
-            image = request.files["image"].read()
-            image = Image.open(BytesIO(image))
+        # if request.files.get("image"):
+        logger.warn('Image received')
+        image = request.files["image"].read()
+        image = Image.open(BytesIO(image))
 
-            image_tensor = preprocess_image(image)
+        image_tensor = preprocess_image(image)
 
         num_valid = 1
         for i in range(numgens):

@@ -5,7 +5,7 @@ COPY inverse-cooking/ml-requirements.txt /inversecooking
 RUN pip install -r ml-requirements.txt
 COPY inverse-cooking /inversecooking
 
-RUN mkdir -p data
+# RUN mkdir -p data
 
 # Working with datasets path
 # RUN mkdir datasets \ 
@@ -16,11 +16,11 @@ RUN mkdir -p data
 #          "http://data.csail.mit.edu/im2recipe/recipe1M_layers.tar.gz" \
 #          -P datasets/
 
-RUN wget -nc https://dl.fbaipublicfiles.com/inversecooking/ingr_vocab.pkl \
-             https://dl.fbaipublicfiles.com/inversecooking/instr_vocab.pkl \
-             https://dl.fbaipublicfiles.com/inversecooking/modelbest.ckpt \
-             -P data/
-
-VOLUME data
+# RUN wget -nc https://dl.fbaipublicfiles.com/inversecooking/ingr_vocab.pkl \
+#              https://dl.fbaipublicfiles.com/inversecooking/instr_vocab.pkl \
+#              https://dl.fbaipublicfiles.com/inversecooking/modelbest.ckpt \
+#              -P data/
+# 
+# VOLUME data
 
 CMD ["python", "src/inversecooking-api.py"]
