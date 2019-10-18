@@ -2,6 +2,8 @@ import os
 import pickle
 import logging
 import torch
+import base64
+import json
 
 from PIL import Image
 from io import BytesIO
@@ -63,6 +65,12 @@ def load_model():
     logger.debug('Loaded model')
 
 
+def decode_image(msg):
+    logger.warning("Decoding image...")
+    img = Image.open(BytesIO(base64.b64decode(msg[0])))
+    return img
+
+
 def preprocess_image(image):
     transf_list_batch = []
     transf_list_batch.append(transforms.ToTensor())
@@ -86,39 +94,48 @@ def predict_recipe():
     data = {"success": False}
 
     if request.method == "POST":
-        logger.info('POST')
-        if request.files.get("image"):
-            logger.info('Image received')
-            try:
-                image = request.files["image"].read()
-            except:
-                logger.error('Couldn\'t open image')
-                return 500
+        logger.info('POST request received!')
+        try:
+            image = request.form.getlist('image')
+            logger.warning("File read succesfully")
+        except:
+            logger.error("Couldn't open image")
+            return 422, "Not an Base64 image file!"
 
-            image = Image.open(BytesIO(image))
-            image_tensor = preprocess_image(image)
+        try:
+            image = decode_image(image)
+        except Exception as e:
+            logger.error(e)
 
-        num_valid = 1
-        for i in range(numgens):
-            with torch.no_grad():
-                outputs = model.sample(image_tensor, greedy=greedy[i],
-                                       temperature=temperature, beam=beam[i],
-                                       true_ingrs=None)
-            ingr_ids = outputs['ingr_ids'].cpu().numpy()
-            recipe_ids = outputs['recipe_ids'].cpu().numpy()
+        image_tensor = preprocess_image(image)
+        logger.warning("Preprocessing image...")
+    else:
+        return 400, "Not a POST request"
 
-            outs, valid = prepare_output(recipe_ids[0], ingr_ids[0],
-                                         ingrs_vocab, vocab)
+    logger.warning('Generating recipe...')
+    num_valid = 1
+    for i in range(numgens):
+        with torch.no_grad():
+            outputs = model.sample(image_tensor, greedy=greedy[i],
+                                   temperature=temperature, beam=beam[i],
+                                   true_ingrs=None)
+        ingr_ids = outputs['ingr_ids'].cpu().numpy()
+        recipe_ids = outputs['recipe_ids'].cpu().numpy()
 
-            if valid['is_valid']:
-                logger.debug('Recipe succesfully generated!')
-                num_valid += 1
-                # outs['title'], outs['ingrs'], outs['recipe']
-                return outs
-            else:
-                logger.error('Recipe error!')
+        outs, valid = prepare_output(recipe_ids[0], ingr_ids[0],
+                                     ingrs_vocab, vocab)
+
+        if valid['is_valid']:
+            logger.warning('Recipe succesfully generated!')
+            num_valid += 1
+            # outs['title'], outs['ingrs'], outs['recipe']
+            logger.warning(outs['title'])
+            logger.warning(outs['ingrs'])
+            logger.warning(outs['recipe'])
+            return outs
         else:
-            raise TypeError("File must be a image.")
+            logger.error('Recipe error!')
+            return 500, 'Something went wrong when generating the recipe!'
 
     return jsonify(data)
 
