@@ -67,8 +67,15 @@ def load_model():
 
 def decode_image(msg):
     logger.warning("Decoding image...")
-    img = Image.open(BytesIO(base64.b64decode(msg[0])))
-    return img
+    img = None
+    
+    try:
+        img = Image.open(BytesIO(base64.b64decode(msg[0])))
+        logger.warning("Decoded b64 string")
+    except Exception as e:
+        logger.error(e)
+    assert img
+    return
 
 
 def preprocess_image(image):
@@ -89,31 +96,9 @@ def preprocess_image(image):
     return image_tensor
 
 
-@app.route('/predict', methods=['POST'])
-def predict_recipe():
-    data = {"success": False}
-
-    if request.method == "POST":
-        logger.info('POST request received!')
-        try:
-            image = request.form.getlist('image')
-            logger.warning("File read succesfully")
-        except:
-            logger.error("Couldn't open image")
-            return 422, "Not an Base64 image file!"
-
-        try:
-            image = decode_image(image)
-        except Exception as e:
-            logger.error(e)
-
-        image_tensor = preprocess_image(image)
-        logger.warning("Preprocessing image...")
-    else:
-        return 400, "Not a POST request"
-
-    logger.warning('Generating recipe...')
+def generate_recipe(image_tensor):
     num_valid = 1
+    recipes = []
     for i in range(numgens):
         with torch.no_grad():
             outputs = model.sample(image_tensor, greedy=greedy[i],
@@ -132,12 +117,48 @@ def predict_recipe():
             logger.warning(outs['title'])
             logger.warning(outs['ingrs'])
             logger.warning(outs['recipe'])
-            return outs
+            logger.warning('Generating recipe # {}'.format(len(recipes) + 1))
+            recipes.append(outs)
         else:
-            logger.error('Recipe error!')
-            return 500, 'Something went wrong when generating the recipe!'
+            logger.error('Recipe not valid, stopping...')
 
-    return jsonify(data)
+        if num_valid == 3:
+            return recipes
+
+    return recipes
+
+
+@app.route('/predict', methods=['POST'])
+def predict_recipe():
+    if request.method == "POST":
+        logger.info('POST request received!')
+        try:
+            # Get image file
+            if request.files.get("image"):
+                image = request.files["image"].read()
+                logger.warning('Read image as a file')
+                image = Image.open(BytesIO(image))
+            else:
+                image = request.form.getlist('image')
+                logger.warning('Read image as a b64 string')
+                image = decode_image(image)
+        except:
+            logger.error("Couldn't open image")
+            return 422, "Not a Base64 or image file!"
+
+        # Preprocess image
+        logger.warning("Preprocessing image...")
+        image_tensor = preprocess_image(image)
+    else:
+        return 400, "Not a POST request"
+
+    logger.warning('Generating recipe...')
+
+    # Generate Recipe
+    recipes = generate_recipe(image_tensor)
+    if recipes == 500:
+        return 500, "Something went wrong generating the recipes"
+    return jsonify(recipes=recipes)
 
 
 if __name__ == '__main__':
