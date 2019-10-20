@@ -75,7 +75,7 @@ def decode_image(msg):
     except Exception as e:
         logger.error(e)
     assert img
-    return
+    return img
 
 
 def preprocess_image(image):
