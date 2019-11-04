@@ -1,20 +1,22 @@
 {
-  "on": true,
-  "stick1": {
-    "active": true,
-    "time_active": "12:45"
-  },
-  "stick2": {
-    "active": true,
-    "time_active": "10:08"
-  },
-  "stick3": {
-    "active": false,
-    "time_active": "00:00"
-  },
-  "stick4": {
-    "active": false,
-    "time_active": "00:00"
-  },
-  "temperature": 175
+  "smartmeat": {
+    "on": true,
+    "stick1": {
+      "active": true,
+      "time_active": "12:45"
+    },
+    "stick2": {
+      "active": true,
+      "time_active": "10:08"
+    },
+    "stick3": {
+      "active": false,
+      "time_active": "00:00"
+    },
+    "stick4": {
+      "active": false,
+      "time_active": "00:00"
+    },
+    "temperature": 175
+  }
 }
